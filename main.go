@@ -24,10 +24,11 @@ func main() {
 		End:   "0",
 		Ants:  3,
 		Rooms: make(map[string]*Room),
+		Tunnels: strings.Split(p, "\n"),
 	}
 
 	// Parse input paths
-	for _, t := range strings.Split(p, "\n") {
+	for _, t := range antFarm.Tunnels {
 		r := strings.Split(t, "-")
 
 		for _, room := range r {
@@ -88,11 +89,11 @@ func (antFarm *AntFarm) removeInvalidPaths() {
 		fmt.Println("done removing")
 		return
 	}
-	
+
 	for len(antFarm.Paths) > 0 {
 		// fmt.Println("length of paths", len(antFarm.Paths))
 		i := antFarm.findShortestPath()
-		shortest := append([]string{},antFarm.Paths[i]...)
+		shortest := append([]string{}, antFarm.Paths[i]...)
 		antFarm.ValidPaths = append(antFarm.ValidPaths, shortest)
 		// fmt.Println(shortest)
 
@@ -104,8 +105,8 @@ func (antFarm *AntFarm) removeInvalidPaths() {
 				continue
 			}
 			for _, room := range shortest[1:] {
-				if contains(path, room) && room != antFarm.End{
-					fmt.Println("path",k,path,"has",room)
+				if contains(path, room) && room != antFarm.End {
+					fmt.Println("path", k, path, "has", room)
 					toRemove[k] = true
 					break
 				}
@@ -120,7 +121,7 @@ func (antFarm *AntFarm) removeInvalidPaths() {
 				newPaths = append(newPaths, path)
 			}
 		}
-		toRemove = make(map[int]bool)		
+		toRemove = make(map[int]bool)
 		antFarm.Paths = newPaths
 		fmt.Println("valid paths", antFarm.ValidPaths)
 		fmt.Println("To be removed", toRemove, "length of paths", len(antFarm.Paths), "\nPaths", antFarm.Paths)
@@ -185,6 +186,13 @@ func contains(slice []string, item string) bool {
 	return false
 }
 
+func (antFarm AntFarm) simulateShortestTurns(){
+	
+	for i:= 1; i <= antFarm.Ants; i++{
+		
+	}
+}
+
 // Structs for Room and AntFarm
 type Room struct {
 	Name  string
@@ -196,6 +204,7 @@ type AntFarm struct {
 	Rooms      map[string]*Room
 	Start      string
 	End        string
+	Tunnels    []string
 	Paths      [][]string
 	ValidPaths [][]string
 }
