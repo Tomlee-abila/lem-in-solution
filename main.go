@@ -144,7 +144,7 @@ func (antFarm *AntFarm) findOptimalPath() {
 
 	var newValidPaths [][]string
 	for i := range antFarm.ValidPaths {
-		if pathLengths[i] <= len(antFarm.ValidPaths[i]) {
+		if pathLengths[i] > len(antFarm.ValidPaths[i]) {
 			newValidPaths = append(newValidPaths, antFarm.ValidPaths[i])
 		}
 	}
