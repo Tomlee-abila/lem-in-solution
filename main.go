@@ -56,8 +56,8 @@ func main() {
 
 	antFarm.removeInvalidPaths()
 	fmt.Println("Valid paths\n", antFarm.ValidPaths)
-	// antFarm.optimalPath()
-	// fmt.Println("Valid paths\n", antFarm.ValidPaths)
+	antFarm.optimalPath()
+	fmt.Println("Optimal paths\n", antFarm.ValidPaths)
 }
 
 func appendIfNotExists(slice []string, item string) ([]string, bool) {
@@ -107,8 +107,11 @@ func (antFarm *AntFarm) pathsCreation(start string, path []string) {
 }
 
 func (antFarm *AntFarm) removeInvalidPaths() {
-	if len(antFarm.Paths) <= len(antFarm.Rooms[antFarm.Start].Links) && len(antFarm.Paths) <= antFarm.Ants {
-		return // No need to check if there's only one or no paths
+	// if len(antFarm.Paths) <= len(antFarm.Rooms[antFarm.Start].Links) && len(antFarm.Paths) <= antFarm.Ants {
+	// 	return // No need to check if there's only one or no paths
+	// }
+	if len(antFarm.Paths) < 1{
+		return
 	}
 
 	// Assuming this returns an index of the shortest path
@@ -150,7 +153,6 @@ func (antFarm *AntFarm) removeInvalidPaths() {
 	}
 
 	antFarm.Paths = append(antFarm.Paths[:i], antFarm.Paths[i+1:]...)
-	if 
 	antFarm.removeInvalidPaths()
 }
 
