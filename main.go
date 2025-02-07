@@ -48,11 +48,11 @@ func main() {
 	}
 	fmt.Println("done")
 
-	// antFarm.removeInvalidPaths()
-	// fmt.Println("Valid Paths:", antFarm.ValidPaths)
+	antFarm.removeInvalidPaths()
+	fmt.Println("Valid Paths:", antFarm.ValidPaths)
 
-	// antFarm.findOptimalPath()
-	// fmt.Println("Optimal Paths:", antFarm.ValidPaths)
+	antFarm.findOptimalPath()
+	fmt.Println("Optimal Paths:", antFarm.ValidPaths)
 }
 
 // Append item to slice only if it doesn't exist
@@ -84,31 +84,34 @@ func (antFarm *AntFarm) findPaths(current string, path []string) {
 
 // Remove conflicting paths
 func (antFarm *AntFarm) removeInvalidPaths() {
-	fmt.Println("Not done removing")
 	if len(antFarm.Paths) == 0 {
 		fmt.Println("done removing")
 		return
 	}
 	
 	for len(antFarm.Paths) > 0 {
+		// fmt.Println("length of paths", len(antFarm.Paths))
 		i := antFarm.findShortestPath()
 		shortest := append([]string{},antFarm.Paths[i]...)
 		antFarm.ValidPaths = append(antFarm.ValidPaths, shortest)
+		// fmt.Println(shortest)
 
 		toRemove := make(map[int]bool)
+		toRemove[i] = true
 
 		for k, path := range antFarm.Paths {
 			if k == i {
 				continue
 			}
 			for _, room := range shortest[1:] {
-				if contains(path, room) {
+				if contains(path, room) && room != antFarm.End{
+					fmt.Println("path",k,path,"has",room)
 					toRemove[k] = true
 					break
 				}
 			}
 		}
-		// fmt.Println("To be removed", toRemove, "length of paths", antFarm.Paths)
+		fmt.Println("To be removed", toRemove, "length of paths", len(antFarm.Paths))
 
 		// Rebuild Paths excluding removed ones
 		var newPaths [][]string
@@ -117,9 +120,10 @@ func (antFarm *AntFarm) removeInvalidPaths() {
 				newPaths = append(newPaths, path)
 			}
 		}
-		// fmt.Println("To be removed", toRemove, "length of paths", antFarm.Paths)
+		toRemove = make(map[int]bool)		
 		antFarm.Paths = newPaths
-		// fmt.Println("new paths", newPaths, "ant paths", antFarm.Paths)
+		fmt.Println("valid paths", antFarm.ValidPaths)
+		fmt.Println("To be removed", toRemove, "length of paths", len(antFarm.Paths), "\nPaths", antFarm.Paths)
 	}
 }
 
