@@ -19,55 +19,159 @@ func main() {
 7-4
 6-5`
 
-	var antFarm AntFarm
-	antFarm.Start = "1"
-	antFarm.End = "0"
-	antFarm.Ants = 3
-	antFarm.Rooms = make(map[string]*Room)
-
-	arrP := strings.Split(p, "\n")
-
-	fmt.Println(arrP)
-
-	for _, t := range arrP {
-		r := strings.Split(t, "-")
-
-		// Ensure rooms exist before modifying them
-		if _, exists := antFarm.Rooms[r[0]]; !exists {
-			antFarm.Rooms[r[0]] = &Room{Name: r[0], Links: []string{}}
-		}
-
-		if _, exists := antFarm.Rooms[r[1]]; !exists {
-			antFarm.Rooms[r[1]] = &Room{Name: r[1], Links: []string{}}
-		}
-
-		antFarm.Rooms[r[0]].Links, _ = appendIfNotExists(antFarm.Rooms[r[0]].Links, r[1])
-		antFarm.Rooms[r[1]].Links, _ = appendIfNotExists(antFarm.Rooms[r[1]].Links, r[0])
-
-		antFarm.Rooms[r[0]].Name = r[0]
-		antFarm.Rooms[r[1]].Name = r[1]
+	antFarm := AntFarm{
+		Start: "1",
+		End:   "0",
+		Ants:  3,
+		Rooms: make(map[string]*Room),
 	}
 
-	antFarm.pathsCreation(antFarm.Start, []string{"1"})
+	// Parse input paths
+	for _, t := range strings.Split(p, "\n") {
+		r := strings.Split(t, "-")
+
+		for _, room := range r {
+			if _, exists := antFarm.Rooms[room]; !exists {
+				antFarm.Rooms[room] = &Room{Name: room}
+			}
+		}
+
+		antFarm.Rooms[r[0]].Links = appendIfNotExists(antFarm.Rooms[r[0]].Links, r[1])
+		antFarm.Rooms[r[1]].Links = appendIfNotExists(antFarm.Rooms[r[1]].Links, r[0])
+	}
+
+	antFarm.findPaths(antFarm.Start, []string{antFarm.Start})
+
+	fmt.Println("All Paths:")
 	for i, path := range antFarm.Paths {
 		fmt.Println(i, ":", path)
 	}
-	// fmt.Println("paths\n", antFarm.Paths)
+	fmt.Println("done")
 
-	antFarm.removeInvalidPaths()
-	fmt.Println("Valid paths\n", antFarm.ValidPaths)
-	antFarm.optimalPath()
-	fmt.Println("Optimal paths\n", antFarm.ValidPaths)
+	// antFarm.removeInvalidPaths()
+	// fmt.Println("Valid Paths:", antFarm.ValidPaths)
+
+	// antFarm.findOptimalPath()
+	// fmt.Println("Optimal Paths:", antFarm.ValidPaths)
 }
 
-func appendIfNotExists(slice []string, item string) ([]string, bool) {
-	if !contains(slice, item) {
-		slice = append(slice, item)
-		return slice, true
+// Append item to slice only if it doesn't exist
+func appendIfNotExists(slice []string, item string) []string {
+	for _, v := range slice {
+		if v == item {
+			return slice
+		}
 	}
-	return slice, false
+	return append(slice, item)
 }
 
+// Recursively find all paths
+func (antFarm *AntFarm) findPaths(current string, path []string) {
+	nPath := append([]string{}, path...)
+	for _, room := range antFarm.Rooms[current].Links {
+		if contains(path, room) {
+			continue
+		}
+
+		newPath := append(nPath, room)
+		if room == antFarm.End {
+			antFarm.Paths = append(antFarm.Paths, newPath)
+		} else {
+			antFarm.findPaths(room, newPath)
+		}
+	}
+}
+
+// Remove conflicting paths
+func (antFarm *AntFarm) removeInvalidPaths() {
+	fmt.Println("Not done removing")
+	if len(antFarm.Paths) == 0 {
+		fmt.Println("done removing")
+		return
+	}
+	
+	for len(antFarm.Paths) > 0 {
+		i := antFarm.findShortestPath()
+		shortest := append([]string{},antFarm.Paths[i]...)
+		antFarm.ValidPaths = append(antFarm.ValidPaths, shortest)
+
+		toRemove := make(map[int]bool)
+
+		for k, path := range antFarm.Paths {
+			if k == i {
+				continue
+			}
+			for _, room := range shortest[1:] {
+				if contains(path, room) {
+					toRemove[k] = true
+					break
+				}
+			}
+		}
+		// fmt.Println("To be removed", toRemove, "length of paths", antFarm.Paths)
+
+		// Rebuild Paths excluding removed ones
+		var newPaths [][]string
+		for k, path := range antFarm.Paths {
+			if !toRemove[k] {
+				newPaths = append(newPaths, path)
+			}
+		}
+		// fmt.Println("To be removed", toRemove, "length of paths", antFarm.Paths)
+		antFarm.Paths = newPaths
+		// fmt.Println("new paths", newPaths, "ant paths", antFarm.Paths)
+	}
+}
+
+// Find the most balanced optimal paths
+func (antFarm *AntFarm) findOptimalPath() {
+	pathLengths := make([]int, len(antFarm.ValidPaths))
+	antsLeft := antFarm.Ants
+
+	for i, path := range antFarm.ValidPaths {
+		pathLengths[i] = len(path)
+	}
+
+	for antsLeft > 0 {
+		index := findSmallestIndex(pathLengths)
+		pathLengths[index]++
+		antsLeft--
+	}
+
+	var newValidPaths [][]string
+	for i := range antFarm.ValidPaths {
+		if pathLengths[i] <= len(antFarm.ValidPaths[i]) {
+			newValidPaths = append(newValidPaths, antFarm.ValidPaths[i])
+		}
+	}
+	antFarm.ValidPaths = newValidPaths
+}
+
+// Find index of the shortest path
+func (antFarm *AntFarm) findShortestPath() int {
+	minIdx, minLen := 0, len(antFarm.Paths[0])
+	for i, path := range antFarm.Paths {
+		if len(path) < minLen {
+			minLen = len(path)
+			minIdx = i
+		}
+	}
+	return minIdx
+}
+
+// Find index of the smallest element in a slice
+func findSmallestIndex(slice []int) int {
+	minIdx, minVal := 0, slice[0]
+	for i, val := range slice {
+		if val < minVal {
+			minIdx = i
+			minVal = val
+		}
+	}
+	return minIdx
+}
+
+// Check if a slice contains an item
 func contains(slice []string, item string) bool {
 	for _, v := range slice {
 		if v == item {
@@ -77,139 +181,7 @@ func contains(slice []string, item string) bool {
 	return false
 }
 
-func (antFarm *AntFarm) pathsCreation(start string, path []string) {
-	nPath := append([]string{}, path[0:]...)
-
-	for i, room := range antFarm.Rooms[start].Links {
-		newPath := append([]string{}, nPath...)
-		cnd := false
-		if i == 0 {
-			path, cnd = appendIfNotExists(path, room)
-			if cnd {
-				if antFarm.End != room {
-					antFarm.pathsCreation(room, path)
-				} else {
-					antFarm.Paths = append(antFarm.Paths, path)
-				}
-			}
-		} else {
-			newPath, cnd = appendIfNotExists(newPath, room)
-			if cnd {
-				if antFarm.End != room {
-					antFarm.pathsCreation(room, newPath)
-				} else {
-					antFarm.Paths = append(antFarm.Paths, newPath)
-					fmt.Println("complete 2", newPath)
-				}
-			}
-		}
-	}
-}
-
-func (antFarm *AntFarm) removeInvalidPaths() {
-	// if len(antFarm.Paths) <= len(antFarm.Rooms[antFarm.Start].Links) && len(antFarm.Paths) <= antFarm.Ants {
-	// 	return // No need to check if there's only one or no paths
-	// }
-	if len(antFarm.Paths) < 1{
-		return
-	}
-
-	// Assuming this returns an index of the shortest path
-	i := antFarm.findShortestPath()
-	shortest := append([]string{}, antFarm.Paths[i]...)
-	antFarm.ValidPaths = append(antFarm.ValidPaths, shortest)
-	fmt.Println("shortest parth", shortest, "\npaths", antFarm.Paths, "length", len(antFarm.Paths), "\nvalid paths", antFarm.ValidPaths)
-
-	for j := 1; j < len(shortest); j++ { // Start from 1 to avoid start room
-		toRemove := []int{} // Track indices to remove
-
-		farm := append([][]string{}, antFarm.Paths...)
-		room := antFarm.Paths[i][j]
-
-		if room == antFarm.End {
-			break // Skip if it's the end room
-		}
-
-		for k, path := range farm {
-			if k == i {
-				// toRemove = append(toRemove, k)
-				continue // Skip comparing to itself
-			}
-
-			if contains(path, room) {
-				toRemove = append(toRemove, k)
-			}
-			// if j < len(path) && path[j] == room { // Check if another path shares the same room
-			//     toRemove = append(toRemove, k)
-			// }
-		}
-		// Remove paths from the list (in reverse order to avoid shifting issues)
-
-		for x := len(toRemove) - 1; x >= 0; x-- {
-			farm = append(farm[:toRemove[x]], farm[toRemove[x]+1:]...)
-		}
-		antFarm.Paths = farm
-		i = antFarm.findShortestPath()
-	}
-
-	antFarm.Paths = append(antFarm.Paths[:i], antFarm.Paths[i+1:]...)
-	antFarm.removeInvalidPaths()
-}
-
-func (antFarm AntFarm) optimalPath() {
-	paths := []int{}
-	count := antFarm.Ants
-
-	for _, path := range antFarm.ValidPaths {
-		paths = append(paths, len(path))
-	}
-
-	for count > 0 {
-		index := smallest(paths)
-		paths[index] += 1
-		count--
-	}
-
-	for i := len(paths) - 1; i >= 0; i-- {
-		if paths[i] == len(antFarm.ValidPaths[i]) {
-			antFarm.ValidPaths = append(antFarm.ValidPaths[:i], antFarm.Paths[i+1:]...)
-		}
-	}
-}
-
-func smallest(slice []int) int {
-	min := -1
-	var index int
-	for i := range slice {
-		if min == -1 {
-			min = slice[i]
-			index = i
-		}
-
-		if slice[i] < min {
-			min = slice[i]
-			index = i
-		}
-	}
-	return index
-}
-
-func (antFarm AntFarm) findShortestPath() int {
-	min := 0
-	var result int
-	for i, path := range antFarm.Paths {
-		if min == 0 {
-			min = len(path)
-			result = i
-		}
-		if len(path) < min {
-			min = len(path)
-			result = i
-		}
-	}
-	return result
-}
-
+// Structs for Room and AntFarm
 type Room struct {
 	Name  string
 	Links []string
@@ -220,7 +192,6 @@ type AntFarm struct {
 	Rooms      map[string]*Room
 	Start      string
 	End        string
-	Tunnels    []string
 	Paths      [][]string
 	ValidPaths [][]string
 }
